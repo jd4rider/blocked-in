@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d4fb5"/><stop offset="1" stop-color="#1e1536"/></linearGradient>
+<clipPath id="c"><rect x="32" y="32" width="960" height="960" rx="210"/></clipPath>
+<filter id="s" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#000" flood-opacity=".45"/></filter>
+</defs>
+<g clip-path="url(#c)">
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<rect x="130" y="170" width="764" height="764" rx="60" fill="#150d2a" stroke="#a78bfa" stroke-opacity=".5" stroke-width="10"/>
+<g stroke="#ffffff" stroke-opacity=".08" stroke-width="5"><path d="M257 170V934M385 170V934M512 170V934M640 170V934M767 170V934M130 297H894M130 425H894M130 552H894M130 680H894M130 807H894"/></g>
+<g filter="url(#s)">
+<rect x="150" y="190" width="230" height="108" rx="26" fill="#38bdf8"/>
+<rect x="150" y="190" width="230" height="38" rx="19" fill="#fff" fill-opacity=".25"/>
+<rect x="404" y="190" width="108" height="236" rx="26" fill="#4ade80"/>
+<rect x="404" y="190" width="108" height="38" rx="19" fill="#fff" fill-opacity=".25"/>
+<rect x="660" y="190" width="108" height="360" rx="26" fill="#f472b6"/>
+<rect x="660" y="190" width="108" height="38" rx="19" fill="#fff" fill-opacity=".25"/>
+<rect x="150" y="445" width="108" height="360" rx="26" fill="#f59e0b"/>
+<rect x="150" y="445" width="108" height="38" rx="19" fill="#fff" fill-opacity=".25"/>
+<rect x="404" y="700" width="360" height="108" rx="26" fill="#a78bfa"/>
+<rect x="404" y="700" width="360" height="38" rx="19" fill="#fff" fill-opacity=".25"/>
+<rect x="404" y="445" width="230" height="108" rx="26" fill="#ef4444"/>
+<rect x="404" y="445" width="230" height="38" rx="19" fill="#fff" fill-opacity=".25"/>
+<circle cx="470" cy="499" r="26" fill="#fff"/><circle cx="470" cy="499" r="11" fill="#ef4444"/>
+<path d="M545 466 L605 499 L545 532Z" fill="#fff"/>
+</g>
+<rect x="878" y="440" width="70" height="118" rx="20" fill="#16a34a"/>
+<path d="M898 470 L928 499 L898 528Z" fill="#bbf7d0"/>
+</g>
+</svg>
