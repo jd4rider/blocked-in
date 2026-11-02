@@ -28,14 +28,13 @@ test('every level is solvable and par is the optimal length', () => {
   }
 })
 
-test('blocks slide in any direction and stop at obstacles', () => {
+test('blocks slide along their axis and stop at obstacles', () => {
   const l = lvl([B('special', 0, 2, 2, 0), B('normal', 3, 2, 2, 1), B('wall', 0, 0, 1, 0)])
   const st = startState(l)
-  assert.deepEqual(reach(l, st, 0), [0, 1, 1, 3])
-  assert.deepEqual(reach(l, st, 1), [1, 2, 2, 2])
-  assert.equal(applyMove(l, st, { t: 's', i: 0, dir: 1, k: 2 }), null)
-  assert.equal(applyMove(l, st, { t: 's', i: 2, dir: 1, k: 1 }), null)
-  assert.deepEqual(applyMove(l, st, { t: 's', i: 1, dir: 0, k: 1 }).p[1], [2, 2, 1], 'a vertical block can slide sideways')
+  assert.deepEqual(reach(l, st, 0), { neg: 0, pos: 1 })
+  assert.deepEqual(reach(l, st, 1), { neg: 2, pos: 2 })
+  assert.equal(applyMove(l, st, { t: 's', i: 0, d: 1, k: 2 }), null)
+  assert.equal(applyMove(l, st, { t: 's', i: 2, d: 1, k: 1 }), null)
 })
 
 test('spinners need room to turn', () => {
@@ -47,12 +46,12 @@ test('spinners need room to turn', () => {
   assert.deepEqual(turned.p[1], [3, 0, 1])
 })
 
-test('magnets tow the blocks behind them', () => {
+test('magnets tow the block behind them on the same axis only', () => {
   const l = lvl([B('special', 0, 5, 2, 0), B('mag', 2, 0, 2, 0), B('normal', 0, 0, 2, 0), B('normal', 2, 1, 1, 1)])
-  const moved = applyMove(l, startState(l), { t: 's', i: 1, dir: 1, k: 1 })
+  const moved = applyMove(l, startState(l), { t: 's', i: 1, d: 1, k: 1 })
   assert.deepEqual(moved.p[1], [3, 0, 0])
   assert.deepEqual(moved.p[2], [1, 0, 0], 'towed')
-  assert.deepEqual(moved.p[3], [2, 1, 1], 'a block beside it stays')
+  assert.deepEqual(moved.p[3], [2, 1, 1], 'perpendicular neighbour stays')
 })
 
 test('the exit gate patrols and win needs it aligned', () => {

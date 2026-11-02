@@ -1,10 +1,10 @@
 import TABLE from './levels-table.js'
 
 // Rules of Blocked In.
-// A 6x6 board of sliding blocks. Any block slides in any direction (like Klotski). Free the red key block through the
+// A 6x6 board of sliding blocks. Blocks slide along their own axis. Free the red key block through the
 // exit on the right wall. Twists, introduced world by world:
 //   rot  - tap to turn 90 degrees about its top-left cell (needs the cell it swings into to be empty)
-//   mag  - when it slides, the blocks directly behind it are towed along if they have room
+//   mag  - when it slides, the block directly behind it (same axis) is towed along
 //   wall - fixed stone
 //   exit - in later worlds the exit patrols up and down the right wall, one step per move
 // One move = one drag of any length, one rotation, or one wait. Every move advances the exit.
@@ -63,44 +63,32 @@ export function isWon(lvl, st) {
   return d === 0 && x + lvl.blocks[0].len === N && y === exitRow(lvl, st.ph)
 }
 
-export const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]]
-export const DIR_NAMES = ['left', 'right', 'up', 'down']
-
-const cellsOf = (len, x, y, d) => Array.from({ length: len }, (_, k) => [x + (d ? 0 : k), y + (d ? k : 0)])
-
-// Moves block j by (dx, dy) if every destination cell is in bounds and free (or its own). Returns the new positions or null.
-function shift(lvl, p, j, dx, dy) {
-  const [x, y, d] = p[j]
-  const g = grid(lvl, p)
-  for (const [cx, cy] of cellsOf(lvl.blocks[j].len, x + dx, y + dy, d)) {
-    if (cx < 0 || cy < 0 || cx >= N || cy >= N) return null
-    const o = g[cy * N + cx]
-    if (o >= 0 && o !== j) return null
-  }
-  const q = p.map((a) => a.slice())
-  q[j][0] += dx
-  q[j][1] += dy
-  return q
-}
-
-// One-cell slide of block i in direction dir (0 left, 1 right, 2 up, 3 down). Magnets also tow the blocks
-// directly behind them when those have room to follow. Returns the new positions or null.
+// One-cell slide of block i. Magnets tow the block directly behind them. Returns the new positions or null.
 function stepP(lvl, p, i, dir) {
   const b = lvl.blocks[i]
   if (b.kind === 'wall') return null
-  const [dx, dy] = DIRS[dir]
-  let q = shift(lvl, p, i, dx, dy)
-  if (q && b.kind === 'mag') {
-    const g = grid(lvl, p)
-    const behind = new Set()
-    for (const [cx, cy] of cellsOf(b.len, p[i][0], p[i][1], p[i][2])) {
-      const bx = cx - dx
-      const by = cy - dy
-      if (bx < 0 || by < 0 || bx >= N || by >= N) continue
+  const [x, y, d] = p[i]
+  const dx = d ? 0 : dir
+  const dy = d ? dir : 0
+  const lx = x + (d ? 0 : b.len - 1)
+  const ly = y + (d ? b.len - 1 : 0)
+  const hx = (dir > 0 ? lx : x) + dx
+  const hy = (dir > 0 ? ly : y) + dy
+  const g = grid(lvl, p)
+  if (hx < 0 || hy < 0 || hx >= N || hy >= N || g[hy * N + hx] >= 0) return null
+  const q = p.map((a) => a.slice())
+  q[i][0] += dx
+  q[i][1] += dy
+  if (b.kind === 'mag') {
+    const bx = (dir > 0 ? x : lx) - dx
+    const by = (dir > 0 ? y : ly) - dy
+    if (bx >= 0 && by >= 0 && bx < N && by < N) {
       const j = g[by * N + bx]
-      if (j >= 0 && j !== i && lvl.blocks[j].kind !== 'wall') behind.add(j)
+      if (j >= 0 && lvl.blocks[j].kind !== 'wall' && p[j][2] === d) {
+        q[j][0] += dx
+        q[j][1] += dy
+      }
     }
-    for (const j of behind) q = shift(lvl, q, j, dx, dy) || q
   }
   return q
 }
@@ -118,12 +106,12 @@ function rotateP(lvl, p, i) {
   return q
 }
 
-// A move: { t: 's', i, dir, k } slide k cells, { t: 'r', i } rotate, { t: 'w' } wait.
+// A move: { t: 's', i, d, k } slide k cells, { t: 'r', i } rotate, { t: 'w' } wait.
 export function applyMove(lvl, st, mv) {
   let p = st.p
   if (mv.t === 's') {
     for (let k = 0; k < mv.k; k++) {
-      p = stepP(lvl, p, mv.i, mv.dir)
+      p = stepP(lvl, p, mv.i, mv.d)
       if (!p) return null
     }
   } else if (mv.t === 'r') {
@@ -133,38 +121,38 @@ export function applyMove(lvl, st, mv) {
   return { p, ph: (st.ph + 1) % period(lvl) }
 }
 
-// How far block i can slide in each direction (cells): [left, right, up, down].
+// How far block i can slide each way (cells).
 export function reach(lvl, st, i) {
-  return [0, 1, 2, 3].map((dir) => {
+  const out = { '-1': 0, 1: 0 }
+  for (const dir of [-1, 1]) {
     let p = st.p
-    let n = 0
     for (;;) {
       p = stepP(lvl, p, i, dir)
-      if (!p) return n
-      n++
+      if (!p) break
+      out[dir]++
     }
-  })
+  }
+  return { neg: out[-1], pos: out[1] }
 }
 
 export function neighbors(lvl, st) {
   const out = []
-  const ph = (st.ph + 1) % period(lvl)
   lvl.blocks.forEach((b, i) => {
     if (b.kind === 'wall') return
-    for (let dir = 0; dir < 4; dir++) {
+    for (const dir of [-1, 1]) {
       let p = st.p
       for (let k = 1; ; k++) {
         p = stepP(lvl, p, i, dir)
         if (!p) break
-        out.push({ mv: { t: 's', i, dir, k }, st: { p, ph } })
+        out.push({ mv: { t: 's', i, d: dir, k }, st: { p, ph: (st.ph + 1) % period(lvl) } })
       }
     }
     if (b.kind === 'rot') {
       const p = rotateP(lvl, st.p, i)
-      if (p) out.push({ mv: { t: 'r', i }, st: { p, ph } })
+      if (p) out.push({ mv: { t: 'r', i }, st: { p, ph: (st.ph + 1) % period(lvl) } })
     }
   })
-  if (period(lvl) > 1) out.push({ mv: { t: 'w' }, st: { p: st.p, ph } })
+  if (period(lvl) > 1) out.push({ mv: { t: 'w' }, st: { p: st.p, ph: (st.ph + 1) % period(lvl) } })
   return out
 }
 

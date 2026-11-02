@@ -3,7 +3,7 @@ import { W, H, button, text, fade, background } from './common.js'
 import { flashAt, popText, grains } from './fx.js'
 import { sfx } from '../sound.js'
 import { data, persist } from './save.js'
-import { levelData, WORLDS, worldOf, TOTAL_LEVELS, PACK, N, startState, applyMove, reach, DIRS, DIR_NAMES, solve, isWon, exitRow, period, starsFor } from '../game.js'
+import { levelData, WORLDS, worldOf, TOTAL_LEVELS, PACK, N, startState, applyMove, reach, solve, isWon, exitRow, period, starsFor } from '../game.js'
 
 const CS = 88
 const X0 = (W - N * CS) / 2
@@ -200,7 +200,7 @@ export default class GameScene extends Phaser.Scene {
     if (patrol) button(this, at(), y, '⏳ Wait', () => this.wait(), { ...b, color: 0x16a34a })
     button(this, at(), y, '↻ Restart', () => this.scene.restart({ level: this.n }), { ...b, color: 0x1d4ed8 })
     button(this, at(), y, '☰ Levels', () => fade(this, 'levels', { page: Math.floor((this.n - 1) / PACK) }), { ...b, color: 0x475569 })
-    text(this, W / 2, 836, 'Drag blocks any way · tap spinners · U undo · H hint · R restart', 13, '#b9aedd').setOrigin(0.5)
+    text(this, W / 2, 836, 'Drag blocks · tap spinners · U undo · H hint · R restart', 13, '#b9aedd').setOrigin(0.5)
   }
 
   updateHud() {
@@ -232,43 +232,30 @@ export default class GameScene extends Phaser.Scene {
 
   beginDrag(i, pointer) {
     if (this.busy || this.ended || this.drag) return
-    this.drag = { i, sx: pointer.worldX, sy: pointer.worldY, reach: reach(this.lvl, this.state, i), vert: null, delta: 0, moved: 0, k: 0 }
+    const p = this.state.p[i]
+    this.drag = { i, sx: pointer.worldX, sy: pointer.worldY, axis: p[2], reach: reach(this.lvl, this.state, i), delta: 0, moved: 0, k: 0 }
     this.objs[i].setDepth(20)
     this.clearMarks()
   }
 
-  // The drag locks to whichever axis the finger moves along first, then slides within the room that way.
   onMove(pointer) {
     const d = this.drag
     if (!d) return
-    const dx = pointer.worldX - d.sx
-    const dy = pointer.worldY - d.sy
-    d.moved = Math.max(d.moved, Math.abs(dx), Math.abs(dy))
-    if (d.vert === null) {
-      if (d.moved < 10) return
-      d.vert = Math.abs(dy) > Math.abs(dx)
-    }
-    const raw = d.vert ? dy : dx
-    const [lo, hi] = d.vert ? [d.reach[2], d.reach[3]] : [d.reach[0], d.reach[1]]
-    d.delta = Phaser.Math.Clamp(raw, -lo * CS, hi * CS)
+    const raw = d.axis ? pointer.worldY - d.sy : pointer.worldX - d.sx
+    d.moved = Math.max(d.moved, Math.abs(raw))
+    d.delta = Phaser.Math.Clamp(raw, -d.reach.neg * CS, d.reach.pos * CS)
     const base = this.posOf(this.state.p[d.i])
     const o = this.objs[d.i]
-    o.x = base.x + (d.vert ? 0 : d.delta)
-    o.y = base.y + (d.vert ? d.delta : 0)
+    if (d.axis) o.y = base.y + d.delta
+    else o.x = base.x + d.delta
     const k = Math.round(d.delta / CS)
     if (k !== d.k) {
       d.k = k
       if (this.lvl.blocks[d.i].kind === 'mag') {
-        const ns = k ? applyMove(this.lvl, this.state, this.slideMove(d)) : this.state
+        const ns = k ? applyMove(this.lvl, this.state, { t: 's', i: d.i, d: Math.sign(k), k: Math.abs(k) }) : this.state
         if (ns) ns.p.forEach((p, j) => j !== d.i && this.objs[j].setPosition(this.posOf(p).x, this.posOf(p).y))
       }
     }
-  }
-
-  slideMove(d) {
-    const k = Math.round(d.delta / CS)
-    const dir = d.vert ? (k > 0 ? 3 : 2) : k > 0 ? 1 : 0
-    return { t: 's', i: d.i, dir, k: Math.abs(k) }
   }
 
   onUp() {
@@ -282,11 +269,12 @@ export default class GameScene extends Phaser.Scene {
       else this.syncAll(true)
       return
     }
-    if (!Math.round(d.delta / CS)) {
+    const k = Math.round(d.delta / CS)
+    if (!k) {
       this.syncAll(true)
       return
     }
-    this.doMove(this.slideMove(d))
+    this.doMove({ t: 's', i: d.i, d: Math.sign(k), k: Math.abs(k) })
   }
 
   rotate(i) {
@@ -375,9 +363,10 @@ export default class GameScene extends Phaser.Scene {
     outline(this.state.p[mv.i], b.len, 0xfde047)
     if (mv.t === 's') {
       const p = this.state.p[mv.i]
-      const [dx, dy] = DIRS[mv.dir]
-      outline([p[0] + dx * mv.k, p[1] + dy * mv.k, p[2]], b.len, 0x4ade80)
-      this.toast(`Slide the yellow block ${DIR_NAMES[mv.dir]} ${mv.k}.`, '#fde68a', 3500)
+      const to = [p[0] + (p[2] ? 0 : mv.d * mv.k), p[1] + (p[2] ? mv.d * mv.k : 0), p[2]]
+      outline(to, b.len, 0x4ade80)
+      const dir = p[2] ? (mv.d > 0 ? 'down' : 'up') : mv.d > 0 ? 'right' : 'left'
+      this.toast(`Slide the yellow block ${dir} ${mv.k}.`, '#fde68a', 3500)
     } else this.toast('Tap the yellow spinner to turn it.', '#fde68a', 3500)
   }
 
