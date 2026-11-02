@@ -10,7 +10,7 @@ function createWindow() {
     minWidth: 420,
     minHeight: 560,
     title: 'Blocked In',
-    backgroundColor: '#2b1a0c',
+    backgroundColor: '#1e1536',
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
