@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { openTipJar } from './support.js'
 import { W, H, button, text, fade, background } from './common.js'
 import { flashAt, popText, grains } from './fx.js'
 import { sfx } from '../sound.js'
@@ -404,8 +405,8 @@ export default class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: shadeR, fillAlpha: 0.55, duration: 300 })
     const box = this.add.container(W / 2, H / 2 - 20).setDepth(D + 1)
     const bg = this.add.graphics()
-    bg.fillStyle(0x1a1233, 0.97).fillRoundedRect(-270, -200, 540, 400, 28)
-    bg.lineStyle(4, 0xfde047, 1).strokeRoundedRect(-270, -200, 540, 400, 28)
+    bg.fillStyle(0x1a1233, 0.97).fillRoundedRect(-270, -200, 540, 420, 28)
+    bg.lineStyle(4, 0xfde047, 1).strokeRoundedRect(-270, -200, 540, 420, 28)
     box.add(bg)
     box.add(text(this, 0, -150, 'Unblocked!', 44, '#fde047', { fontStyle: 'bold' }).setOrigin(0.5))
     for (let i = 0; i < 3; i++) {
@@ -419,6 +420,8 @@ export default class GameScene extends Phaser.Scene {
     box.add(button(this, hasNext ? -170 : -90, y, '↻ Retry', () => this.scene.restart({ level: this.n }), { w: 150, h: 58, size: 22, color: 0x1d4ed8 }))
     box.add(button(this, hasNext ? 0 : 90, y, '🗂 Levels', () => fade(this, 'levels', { page: Math.floor((this.n - 1) / PACK) }), { w: 150, h: 58, size: 22, color: 0x475569 }))
     if (hasNext) box.add(button(this, 170, y, 'Next ▶', () => fade(this, 'game', { level: this.n + 1 }), { w: 150, h: 58, size: 22, color: 0xd97706 }))
+    // Quiet support link: results panel only, under the actions inside the card.
+    box.add(button(this, 0, 172, '☕ Buy me a coffee', () => openTipJar(), { w: 230, h: 28, size: 15, color: 0x2b2140, textColor: '#fde68a' }))
     box.setScale(0.7).setAlpha(0)
     this.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 280, ease: 'Back.Out' })
     this.input.keyboard.once('keydown-ENTER', () => (hasNext ? fade(this, 'game', { level: this.n + 1 }) : this.scene.restart({ level: this.n })))
